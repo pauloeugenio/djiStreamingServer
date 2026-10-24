@@ -55,6 +55,11 @@ def stage():
     setup = fetch('https://go.microsoft.com/fwlink/p/?LinkId=2124703', 'MicrosoftEdgeWebview2Setup.exe')
     assert setup.read_bytes()[:2] == b'MZ', 'WebView2 bootstrapper is not an executable'
     shutil.copy2(setup, BUILD / setup.name)
+    shutil.copy2(ROOT / 'assets' / 'qrcode-pix.png', BUILD / 'qrcode-pix.png')
+    for asset_name in ['logo.png', 'drone.ico']:
+        shutil.copy2(ROOT / 'assets' / asset_name, BUILD / asset_name)
+    # Padrões versionados separados de about.json, que o usuário pode personalizar.
+    shutil.copy2(ROOT / 'about.json', BUILD / 'about-defaults.json')
     for source in ['about.json', 'README.md']:
         shutil.copy2(ROOT / source, BUILD / source)
     (BUILD / 'DroneStreamingServer.exe.config').write_text('''<?xml version="1.0" encoding="utf-8"?>

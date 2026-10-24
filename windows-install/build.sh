@@ -4,6 +4,7 @@ export LANG=C.UTF-8
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 python3 windows-install/prepare.py
 mcs -sdk:4.7.2 -langversion:7.2 -target:winexe -platform:x64 -optimize+ \
+    -win32icon:windows-install/assets/drone.ico \
     -win32manifest:windows-install/src/app.manifest \
     -out:windows-install/build/DroneStreamingServer.exe \
     -r:System.Windows.Forms -r:System.Drawing -r:System.Core -r:System.Web.Extensions \

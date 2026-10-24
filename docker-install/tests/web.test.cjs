@@ -20,7 +20,7 @@ const context = {
   window: {addEventListener() {}, isSecureContext: false}, navigator: {}, URL,
   setTimeout: () => 1, clearTimeout() {},
   fetch: () => Promise.resolve({ok: true, json: () => Promise.resolve({
-    name: 'Paulo Eugenio', email: 'pauloeugenio@hotmail.com.br', url: 'https://github.com/pauloeugenio', pix: ''
+    name: 'Paulo Eugenio', email: 'pauloeugenio@hotmail.com.br', url: 'https://github.com/pauloeugenio', pix: 'd1d04da4-56a0-4216-a83d-d24a2ff0d9ff'
   })})
 };
 vm.createContext(context);
@@ -43,5 +43,18 @@ setImmediate(() => {
   assert.equal(element('creator-name').textContent, 'Paulo Eugenio');
   assert.equal(element('creator-email').href, 'mailto:pauloeugenio@hotmail.com.br');
   assert.equal(element('creator-link').href, 'https://github.com/pauloeugenio');
-  console.log('OK: URLs, player WebRTC/HLS, preferências, validação de IP, restauração e dados do criador.');
+  assert.equal(element('pix-key').value, 'd1d04da4-56a0-4216-a83d-d24a2ff0d9ff');
+  assert.equal(element('copy-pix').disabled, false);
+  assert.equal(element('pix-qr').hidden, false);
+  element('copy-pix').handlers.click();
+  const alternate = Object.assign({}, context, {
+    fetch: () => Promise.resolve({ok: true, json: () => Promise.resolve({pix: 'outra-chave'})})
+  });
+  vm.createContext(alternate);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../web/app.js'), 'utf8'), alternate);
+  setImmediate(() => {
+    assert.equal(element('pix-key').value, 'outra-chave');
+    assert.equal(element('pix-qr').hidden, true);
+    console.log('OK: player, preferências, dados do criador, Pix e ocultação de QR para outra chave.');
+  });
 });

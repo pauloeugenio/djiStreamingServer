@@ -102,6 +102,27 @@ namespace DroneStreamingServer
             return occupied;
         }
 
+        static Creator ReadCreator(string path)
+        {
+            try { return new JavaScriptSerializer().Deserialize<Creator>(File.ReadAllText(path)); }
+            catch { return null; }
+        }
+
+        public static Creator LoadCreator(string folder)
+        {
+            var defaults = ReadCreator(Path.Combine(folder, "about-defaults.json"));
+            var creator = ReadCreator(Path.Combine(folder, "about.json")) ?? defaults ?? new Creator { name = "Paulo Eugenio", email = "pauloeugenio@hotmail.com.br", url = "https://github.com/pauloeugenio" };
+            // Migrar o Pix vazio da versão anterior, preservando os demais campos personalizados.
+            if (String.IsNullOrWhiteSpace(creator.pix)) creator.pix = defaults != null ? defaults.pix : "";
+            return creator;
+        }
+
+        public static bool QrMatchesCreator(Creator creator, string folder)
+        {
+            var defaults = ReadCreator(Path.Combine(folder, "about-defaults.json"));
+            return defaults != null && !String.IsNullOrWhiteSpace(defaults.pix) && String.Equals(creator.pix, defaults.pix, StringComparison.OrdinalIgnoreCase);
+        }
+
         public static Preferences LoadPreferences(string path)
         {
             try

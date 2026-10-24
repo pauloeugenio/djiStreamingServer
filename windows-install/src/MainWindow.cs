@@ -35,11 +35,20 @@ namespace DroneStreamingServer
         readonly Button start = new Button();
         readonly Button stop = new Button();
         readonly Button reconnect = new Button();
+        readonly Button fullscreenButton = new Button();
         readonly Button save = new Button();
         readonly Button refresh = new Button();
         readonly WebView2 player = new WebView2();
         readonly Label runtimeNote = new Label();
         readonly Panel playerHost = new Panel();
+        bool fullscreen;
+        Rectangle windowBounds;
+        FormWindowState windowState;
+        FormBorderStyle windowBorder;
+        bool windowTopMost;
+        Size windowMinimum;
+        TableLayoutPanel playerLayout;
+        Control sidebar;
         Process server;
         ProcessJob job;
         CancellationTokenSource session;
@@ -56,6 +65,7 @@ namespace DroneStreamingServer
         public MainWindow()
         {
             Text = "Drone Streaming Server";
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             Size = new Size(1180, 810); MinimumSize = new Size(960, 700);
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Background; ForeColor = Ink;
@@ -102,14 +112,27 @@ namespace DroneStreamingServer
             var page = new TabPage(name) { BackColor = Background, ForeColor = Ink, Padding = new Padding(0) };
             screens.TabPages.Add(page); return page;
         }
+        PictureBox BrandLogo(int width, int height)
+        {
+            var picture = new PictureBox { Size = new Size(width, height), SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.Transparent, Margin = new Padding(0, 0, 0, 15), AccessibleName = "Logomarca Drone Streaming Server" };
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+            if (File.Exists(path)) {
+                using (var original = Image.FromFile(path)) picture.Image = new Bitmap(original);
+                Disposed += (sender, e) => { if (picture.Image != null) picture.Image.Dispose(); };
+            }
+            return picture;
+        }
+
         void BuildLayout()
         {
             var side = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 210, BackColor = Card, Padding = new Padding(20, 32, 10, 20), FlowDirection = FlowDirection.TopDown, WrapContents = false };
+            side.Controls.Add(BrandLogo(156, 110));
             side.Controls.Add(LabelText("DRONE STREAM", 16, Accent));
             side.Controls.Add(LabelText("SERVIDOR LOCAL", 8, Muted));
+            int viewIndex = 0;
             foreach (string title in new[] {"Transmissão", "Configurações", "Sobre"})
             {
-                int index = side.Controls.Count - 2;
+                int index = viewIndex++;
                 var button = new Button(); StyleButton(button, title); button.Width = 170; button.AutoSize = false; button.Height = 48; button.Margin = new Padding(0, 15, 0, 0);
                 button.Click += (sender, e) => screens.SelectedIndex = index;
                 side.Controls.Add(button);
@@ -117,6 +140,7 @@ namespace DroneStreamingServer
             side.Controls.Add(new Label { Text = "Sem Docker.\nSem navegador externo.\nSeu vídeo, na sua rede.", ForeColor = Muted, AutoSize = true, Margin = new Padding(0, 50, 0, 0) });
             screens.Dock = DockStyle.Fill; screens.Appearance = TabAppearance.FlatButtons;
             screens.ItemSize = new Size(0, 1); screens.SizeMode = TabSizeMode.Fixed;
+            sidebar = side;
             Controls.Add(screens); Controls.Add(side);
             var transmission = Screen("Transmissão");
             var settings = Screen("Configurações");
@@ -135,13 +159,15 @@ namespace DroneStreamingServer
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 110));
             page.Controls.Add(layout);
+            playerLayout = layout;
             layout.Controls.Add(LabelText("Uma nova perspectiva.", 25), 0, 0);
             var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
-            StyleButton(start, "Iniciar servidor", true); StyleButton(stop, "Parar servidor"); StyleButton(reconnect, "Reconectar vídeo");
+            StyleButton(start, "Iniciar servidor", true); StyleButton(stop, "Parar servidor"); StyleButton(reconnect, "Reconectar vídeo"); StyleButton(fullscreenButton, "Tela cheia");
             start.Click += async (sender, e) => await StartServer();
             stop.Click += (sender, e) => StopServer();
             reconnect.Click += async (sender, e) => await OpenPlayer();
-            actions.Controls.AddRange(new Control[] {start, stop, reconnect}); layout.Controls.Add(actions, 0, 1);
+            fullscreenButton.Click += (sender, e) => ToggleFullscreen();
+            actions.Controls.AddRange(new Control[] {start, stop, reconnect, fullscreenButton}); layout.Controls.Add(actions, 0, 1);
             status.Dock = DockStyle.Fill; status.ForeColor = Accent; status.Padding = new Padding(0, 7, 0, 0); layout.Controls.Add(status, 0, 2);
             var connection = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
             connection.Controls.Add(new Label { Text = "No drone (RTMP):", AutoSize = true, Padding = new Padding(0, 8, 8, 0) });
@@ -185,28 +211,76 @@ namespace DroneStreamingServer
         void BuildAbout(TabPage page)
         {
             var column = Column(); page.Controls.Add(column);
-            column.Controls.Add(LabelText("Sobre o projeto", 25));
-            column.Controls.Add(LabelText("Drone Streaming Server · Windows · 1.0.0", 14, Accent));
-            column.Controls.Add(LabelText("Uma ponte entre a câmera do drone e quem precisa acompanhar.\nPublicação RTMP, reprodução WebRTC/HLS e servidor MediaMTX local.\nProjeto independente, sem afiliação com fabricantes de drones.", 10, Muted));
-            Creator creator;
-            try { creator = new JavaScriptSerializer().Deserialize<Creator>(File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "about.json"))); }
-            catch { creator = new Creator { name = "Paulo Eugenio", email = "pauloeugenio@hotmail.com.br", url = "https://github.com/pauloeugenio", pix = "" }; }
-            if (creator == null) creator = new Creator();
-            column.Controls.Add(LabelText(creator.name ?? "Paulo Eugenio", 20));
-            var description = LabelText(creator.description ?? "Criador do projeto.", 10, Muted); description.MaximumSize = new Size(650, 0); column.Controls.Add(description);
-            if (!String.IsNullOrEmpty(creator.email))
-            {
-                var mail = new Button(); StyleButton(mail, creator.email); mail.Click += (sender, e) => OpenLink("mailto:" + creator.email); column.Controls.Add(mail);
+            column.Controls.Add(BrandLogo(210, 145));
+            column.Controls.Add(LabelText("FEITO PARA CONECTAR", 9, Accent));
+            column.Controls.Add(LabelText("Uma ideia que aproxima.", 27));
+            column.Controls.Add(LabelText("Drone Streaming Server · Windows · 1.1.1", 11, Muted));
+            var introduction = LabelText("Da câmera do drone para a sua tela. Um servidor local, simples de operar e feito para compartilhar novas perspectivas.", 12, Muted);
+            introduction.MaximumSize = new Size(700, 0); column.Controls.Add(introduction);
+            var creator = ServerConfig.LoadCreator(AppDomain.CurrentDomain.BaseDirectory);
+
+            var profile = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Card, Padding = new Padding(24), Margin = new Padding(0, 16, 0, 16) };
+            profile.Controls.Add(LabelText("CRIADOR DO PROJETO", 9, Accent));
+            profile.Controls.Add(LabelText(creator.name ?? "Paulo Eugenio", 23));
+            var bio = LabelText(creator.description ?? "Tecnologia para conectar pessoas e novas perspectivas.", 11, Muted);
+            profile.Controls.Add(bio);
+            var contacts = new FlowLayoutPanel { AutoSize = true, WrapContents = true, Margin = new Padding(0, 10, 0, 0) };
+            if (!String.IsNullOrEmpty(creator.email)) {
+                var email = new Button(); StyleButton(email, creator.email); email.Click += (sender, e) => OpenLink("mailto:" + creator.email); contacts.Controls.Add(email);
             }
             Uri creatorUrl;
-            if (Uri.TryCreate(creator.url, UriKind.Absolute, out creatorUrl) && (creatorUrl.Scheme == "https" || creatorUrl.Scheme == "http"))
-            {
-                var github = new Button(); StyleButton(github, "GitHub do criador"); github.Click += (sender, e) => OpenLink(creatorUrl.AbsoluteUri); column.Controls.Add(github);
+            if (Uri.TryCreate(creator.url, UriKind.Absolute, out creatorUrl) && (creatorUrl.Scheme == "https" || creatorUrl.Scheme == "http")) {
+                var github = new Button(); StyleButton(github, "Conheça no GitHub"); github.Click += (sender, e) => OpenLink(creatorUrl.AbsoluteUri); contacts.Controls.Add(github);
             }
-            column.Controls.Add(LabelText("Ajude esta ideia a voar.", 19));
-            var contribution = LabelText("Se este projeto foi útil para você, considere fazer uma doação via Pix.\nSeu apoio ajuda na continuidade e nas melhorias do projeto.", 10, Muted); contribution.MaximumSize = new Size(650, 0); column.Controls.Add(contribution);
-            var pix = Input(new TextBox(), true); pix.Width = 570; pix.Text = String.IsNullOrWhiteSpace(creator.pix) ? "Em breve — chave Pix será adicionada" : creator.pix; column.Controls.Add(pix);
-            column.Controls.Add(LabelText("Componentes e respectivas licenças estão na pasta de instalação.\nMediaMTX e WebView2 são distribuídos com suas licenças originais.", 9, Muted));
+            profile.Controls.Add(contacts); column.Controls.Add(profile);
+
+            var donation = new TableLayoutPanel { ColumnCount = 2, RowCount = 1, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Card, Padding = new Padding(24), Margin = new Padding(0, 0, 0, 18) };
+            donation.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            donation.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 240));
+            var message = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Margin = new Padding(0, 0, 18, 0) };
+            message.Controls.Add(LabelText("APOIE O DESENVOLVIMENTO", 9, Accent));
+            message.Controls.Add(LabelText("Ajude esta ideia a voar.", 20));
+            var contribution = LabelText("Se este projeto foi útil para você, considere contribuir com uma doação via Pix. Seu apoio ajuda a manter o desenvolvimento e trazer novas melhorias.", 11, Muted);
+            message.Controls.Add(contribution);
+            message.Controls.Add(LabelText("CHAVE PIX · ALEATÓRIA", 9, Accent));
+            var pix = Input(new TextBox(), true); pix.Text = creator.pix; pix.Font = new Font("Consolas", 10); message.Controls.Add(pix);
+            var copy = new Button(); StyleButton(copy, "Copiar chave Pix", true);
+            copy.Click += (sender, e) => { try { Clipboard.SetText(pix.Text); copy.Text = "Chave copiada!"; } catch { pix.Focus(); pix.SelectAll(); ShowError("Selecione a chave e use Ctrl+C para copiar."); } };
+            message.Controls.Add(copy);
+            var thanks = LabelText("Contribuição voluntária. Obrigado por fazer parte desta ideia.", 10, Muted); message.Controls.Add(thanks);
+            donation.Controls.Add(message, 0, 0);
+            var qrColumn = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(8), Margin = new Padding(0) };
+            var qr = new PictureBox { Size = new Size(216, 216), BackColor = Color.White, SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 0, 12), AccessibleName = "QR Code para contribuição via Pix" };
+            string qrPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "qrcode-pix.png");
+            if (ServerConfig.QrMatchesCreator(creator, AppDomain.CurrentDomain.BaseDirectory) && File.Exists(qrPath)) {
+                using (var original = Image.FromFile(qrPath)) qr.Image = new Bitmap(original);
+                Disposed += (sender, e) => { if (qr.Image != null) qr.Image.Dispose(); };
+            }
+            qrColumn.Controls.Add(qr);
+            if (qr.Image == null) {
+                qr.Visible = false;
+                var unavailable = LabelText("QR Code indisponível para esta chave.\nUse o botão Copiar chave Pix.", 10, Muted);
+                unavailable.MaximumSize = new Size(210, 0); qrColumn.Controls.Add(unavailable);
+            }
+            var enlarge = new Button(); StyleButton(enlarge, "Ampliar QR Code"); enlarge.Enabled = qr.Image != null;
+            enlarge.Click += (sender, e) => {
+                using (var dialog = new Form { Text = "Contribuir via Pix · Paulo Eugenio", Size = new Size(620, 660), MinimumSize = new Size(360, 400), StartPosition = FormStartPosition.CenterParent, BackColor = Color.White, MinimizeBox = false, ShowInTaskbar = false }) {
+                    var picture = new PictureBox { Dock = DockStyle.Fill, Image = qr.Image, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.White };
+                    dialog.Controls.Add(picture); dialog.ShowDialog(this);
+                }
+            };
+            qrColumn.Controls.Add(enlarge); donation.Controls.Add(qrColumn, 1, 0); column.Controls.Add(donation);
+            var footer = LabelText("RTMP → WebRTC / HLS · MediaMTX + Microsoft WebView2\nProjeto independente, sem afiliação com fabricantes de drones. Licenças disponíveis na pasta de instalação.", 9, Muted);
+            column.Controls.Add(footer);
+            Action resize = () => {
+                int width = Math.Max(600, column.ClientSize.Width - column.Padding.Horizontal - 24);
+                profile.Width = donation.Width = width;
+                bio.MaximumSize = new Size(width - 52, 0); contacts.MaximumSize = new Size(width - 52, 0);
+                int textWidth = Math.Max(270, width - donation.Padding.Horizontal - 260);
+                contribution.MaximumSize = thanks.MaximumSize = new Size(textWidth, 0); pix.Width = textWidth;
+                footer.MaximumSize = introduction.MaximumSize = new Size(width, 0);
+            };
+            column.SizeChanged += (sender, e) => resize(); resize();
         }
 
         void RefreshNetworks(string preferred)
@@ -304,6 +378,14 @@ namespace DroneStreamingServer
                     if (closing) return;
                     player.CoreWebView2.Settings.AreDevToolsEnabled = false;
                     player.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                    player.CoreWebView2.ContainsFullScreenElementChanged += (sender, e) => SetFullscreen(player.CoreWebView2.ContainsFullScreenElement);
+                    player.KeyDown += (sender, e) => {
+                        if (e.KeyCode == Keys.F11 || (e.KeyCode == Keys.Escape && fullscreen)) {
+                            e.Handled = true; e.SuppressKeyPress = true;
+                            Keys key = e.KeyCode;
+                            BeginInvoke(new Action(() => { if (key == Keys.F11) ToggleFullscreen(); else ExitFullscreen(); }));
+                        }
+                    };
                     player.CoreWebView2.NewWindowRequested += (sender, e) => e.Handled = true;
                     player.CoreWebView2.NavigationStarting += (sender, e) => {
                         Uri target;
@@ -328,11 +410,12 @@ namespace DroneStreamingServer
                     SetStatus("Servidor ativo. Player indisponível; consulte os logs.");
                 }
             }
-            finally { initializingPlayer = false; if (!closing) { reconnect.Enabled = IsRunning; start.Enabled = !IsRunning && !starting; } }
+            finally { initializingPlayer = false; if (!closing) { fullscreenButton.Enabled = IsRunning && playerReady; reconnect.Enabled = IsRunning; start.Enabled = !IsRunning && !starting; } }
         }
 
         void StopServer()
         {
+            if (fullscreen) SetFullscreen(false);
             var process = server; server = null;
             if (session != null) { session.Cancel(); session.Dispose(); session = null; }
             if (process != null)
@@ -352,9 +435,57 @@ namespace DroneStreamingServer
             if (process != null) Log("Servidor parado pelo aplicativo.");
         }
 
+        protected override bool ProcessCmdKey(ref Message message, Keys keyData)
+        {
+            if (keyData == Keys.F11 && IsRunning && playerReady) { ToggleFullscreen(); return true; }
+            if (keyData == Keys.Escape && fullscreen) { ExitFullscreen(); return true; }
+            return base.ProcessCmdKey(ref message, keyData);
+        }
+
+        void ToggleFullscreen()
+        {
+            if (fullscreen) ExitFullscreen();
+            else if (IsRunning && playerReady) SetFullscreen(true);
+        }
+
+        async void ExitFullscreen()
+        {
+            SetFullscreen(false);
+            if (playerReady && !closing) {
+                try { await player.CoreWebView2.ExecuteScriptAsync("if(document.fullscreenElement) document.exitFullscreen();"); }
+                catch (Exception ex) { Log("Ao sair de tela cheia: " + ex.Message); }
+            }
+        }
+
+        void SetFullscreen(bool enabled)
+        {
+            if (enabled == fullscreen || (enabled && (!IsRunning || closing))) return;
+            SuspendLayout();
+            try {
+                if (enabled) {
+                    windowState = WindowState; windowBounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+                    windowBorder = FormBorderStyle; windowTopMost = TopMost; windowMinimum = MinimumSize;
+                    fullscreen = true;
+                    playerLayout.Controls.Remove(playerHost);
+                    screens.Visible = false; sidebar.Visible = false;
+                    Controls.Add(playerHost); playerHost.Dock = DockStyle.Fill; playerHost.BringToFront();
+                    WindowState = FormWindowState.Normal; MinimumSize = Size.Empty;
+                    FormBorderStyle = FormBorderStyle.None; Bounds = System.Windows.Forms.Screen.FromControl(this).Bounds;
+                    TopMost = true; player.Focus();
+                } else {
+                    fullscreen = false;
+                    Controls.Remove(playerHost); playerLayout.Controls.Add(playerHost, 0, 4);
+                    screens.Visible = true; sidebar.Visible = true;
+                    TopMost = windowTopMost; FormBorderStyle = windowBorder; MinimumSize = windowMinimum;
+                    WindowState = FormWindowState.Normal; Bounds = windowBounds; WindowState = windowState;
+                }
+            } finally { ResumeLayout(true); }
+        }
+
         void ToggleControls(bool active)
         {
             start.Enabled = !active && !starting && !initializingPlayer;
+            fullscreenButton.Enabled = active && playerReady && !initializingPlayer;
             stop.Enabled = active; reconnect.Enabled = active && !starting && !initializingPlayer;
             networks.Enabled = address.Enabled = protocol.Enabled = save.Enabled = refresh.Enabled = !active;
         }

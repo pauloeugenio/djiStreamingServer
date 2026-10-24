@@ -28,7 +28,19 @@ static class CoreTests
             Check(ServerConfig.LoadPreferences(temporary).Address == "10.0.0.4", "Preferências válidas não carregadas");
             Check(ServerConfig.LoadPreferences(temporary).Protocol == "hls", "Protocolo não carregado");
         } finally { File.Delete(temporary); }
+        string folder = Path.Combine(Path.GetTempPath(), "drone-about-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try {
+            File.WriteAllText(Path.Combine(folder, "about-defaults.json"), "{\"name\":\"Paulo Eugenio\",\"pix\":\"d1d04da4-56a0-4216-a83d-d24a2ff0d9ff\"}");
+            File.WriteAllText(Path.Combine(folder, "about.json"), "{\"name\":\"Perfil personalizado\",\"pix\":\"\"}");
+            var creator = ServerConfig.LoadCreator(folder);
+            Check(creator.name == "Perfil personalizado", "Atualização deve preservar o perfil");
+            Check(creator.pix == "d1d04da4-56a0-4216-a83d-d24a2ff0d9ff", "Pix vazio deve receber o novo padrão");
+            Check(ServerConfig.QrMatchesCreator(creator, folder), "QR original deve corresponder ao Pix padrão");
+            File.WriteAllText(Path.Combine(folder, "about.json"), "{\"pix\":\"outra-chave\"}");
+            Check(!ServerConfig.QrMatchesCreator(ServerConfig.LoadCreator(folder), folder), "QR não deve ser exibido para outra chave Pix");
+        } finally { Directory.Delete(folder, true); }
         if (args.Length > 0) File.WriteAllText(args[0], yaml);
-        Console.WriteLine("OK: IPv4, rejeição de injeção YAML, configuração, portas, URLs e persistência.");
+        Console.WriteLine("OK: IPv4, rejeição de injeção YAML, configuração, portas, URLs, persistência e migração de Pix.");
     }
 }

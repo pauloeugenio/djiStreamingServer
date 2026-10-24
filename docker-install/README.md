@@ -37,7 +37,7 @@ Somente ao escolher **2 — Iniciar servidor**, o script inicia os containers e 
 
 - **Transmissão**: endereço RTMP com botão para copiar, instruções para conectar o DJI e player integrado. Clique em **Abrir player** após iniciar a transmissão no DJI. O player começa sem áudio para facilitar a reprodução automática.
 - **Configurações**: IP de destino, escolha entre WebRTC e HLS e abertura automática do player. São preferências locais do navegador; não modificam a configuração do MediaMTX nem controlam o container.
-- **Sobre o projeto**: descrição do software e informações do criador, editáveis em `web/about.json`. Os campos são `name`, `description`, `email`, `url` (link opcional HTTP/HTTPS) e `pix`. Deixe `pix` vazio para mostrar “Em breve”; preencha com sua chave para disponibilizá-la na área de contribuição.
+- **Sobre o projeto**: descrição do software e informações do criador, editáveis em `web/about.json`. Os campos são `name`, `description`, `email`, `url` (link opcional HTTP/HTTPS) e `pix`. A chave Pix já está preenchida e o QR Code original acompanha o painel em `web/assets/qrcode-pix.png`. A seção Sobre oferece copiar a chave e ampliar o QR em uma nova aba. Se a chave for alterada para outra, o QR original é ocultado para evitar dados divergentes.
 
 O painel é servido pelo Nginx e incorpora os players conforme a [documentação de integração do MediaMTX](https://mediamtx.org/docs/read/web-browsers). Não depende de bibliotecas, fontes ou serviços externos. A indicação de player aberto não confirma a chegada do vídeo; mensagens de conexão aparecem no próprio player. O controle de início e parada continua disponível pelo `install-DroneStreamingServer.sh`.
 
@@ -271,3 +271,5 @@ docker compose down
 A estrutura do `docker-compose.yml` foi validada com `docker compose config --quiet`. A transmissão completa precisa ser confirmada com o equipamento DJI e um espectador na rede; essa validação de estrutura não comprova compatibilidade com o drone nem reprodução de vídeo.
 
 Para verificar a lógica da interface sem instalar dependências adicionais, use `node tests/web.test.cjs` (Node.js é necessário apenas para esse teste). O teste simula os elementos da página e cobre URLs de reprodução, preferências, IP inválido, restauração e informações do criador. Ele não substitui um teste visual em navegador nem uma transmissão real.
+
+A logomarca do projeto está em `web/assets/logo.png`, com o original preservado. Ela aparece na navegação e na seção Sobre; `web/assets/favicon.ico` define o ícone da aba do navegador.

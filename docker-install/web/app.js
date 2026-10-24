@@ -64,14 +64,15 @@ $('fullscreen').addEventListener('click', async () => {
   try { await $('player-stage').requestFullscreen(); }
   catch { toast('Tela cheia indisponível neste navegador.'); }
 });
-$('copy').addEventListener('click', async () => {
-  const input = $('rtmp-url');
+async function copyInput(input, message) {
   try {
     if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(input.value);
     else { input.focus(); input.select(); if (!document.execCommand('copy')) throw new Error('copy'); }
-    toast('Endereço RTMP copiado!');
+    toast(message);
   } catch { input.focus(); input.select(); toast('Use Ctrl+C ou copie o endereço selecionado.'); }
-});
+}
+$('copy').addEventListener('click', () => copyInput($('rtmp-url'), 'Endereço RTMP copiado!'));
+$('copy-pix').addEventListener('click', () => copyInput($('pix-key'), 'Chave Pix copiada!'));
 $('settings-form').addEventListener('submit', event => {
   event.preventDefault();
   const host = $('server-ip').value.trim();
@@ -93,7 +94,7 @@ $('reset').addEventListener('click', () => {
 window.addEventListener('hashchange', navigate);
 renderSettings(); navigate();
 if (settings.autoplay) openPlayer();
-fetch('about.json').then(response => { if (!response.ok) throw new Error('about'); return response.json(); }).then(about => {
+fetch('about.json', {cache: 'no-store'}).then(response => { if (!response.ok) throw new Error('about'); return response.json(); }).then(about => {
   if (typeof about.name === 'string') $('creator-name').textContent = about.name;
   if (typeof about.description === 'string') $('creator-description').textContent = about.description;
   if (typeof about.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(about.email)) {
@@ -101,9 +102,13 @@ fetch('about.json').then(response => { if (!response.ok) throw new Error('about'
     $('creator-email').href = `mailto:${about.email}`;
     $('creator-email').hidden = false;
   }
-  if (typeof about.pix === 'string' && about.pix.trim()) $('pix-key').value = about.pix.trim();
+  const pix = typeof about.pix === 'string' ? about.pix.trim() : '';
+  $('pix-key').value = pix || 'Chave Pix indisponível';
+  $('copy-pix').disabled = !pix;
+  // O QR original corresponde somente a esta chave, mesmo se about.json for personalizado.
+  $('pix-qr').hidden = pix.toLowerCase() !== 'd1d04da4-56a0-4216-a83d-d24a2ff0d9ff';
   if (about.url) {
     const url = new URL(about.url);
     if (['https:', 'http:'].includes(url.protocol)) { $('creator-link').href = url.href; $('creator-link').hidden = false; }
   }
-}).catch(() => { /* Manter a apresentação padrão quando não houver dados do criador. */ });
+}).catch(() => { $('pix-key').value = 'Não foi possível carregar a chave Pix'; });

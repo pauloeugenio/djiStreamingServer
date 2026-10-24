@@ -7,8 +7,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Servidor local de transmissão de drones")]
 [assembly: AssemblyCompany("Paulo Eugenio")]
 [assembly: AssemblyProduct("Drone Streaming Server")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.1.0")]
 namespace DroneStreamingServer
 {
     internal static class Program
