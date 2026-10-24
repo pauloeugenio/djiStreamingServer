@@ -1,4 +1,6 @@
-# Drone Streaming Server
+# Docker / Linux — referência técnica
+
+[← Voltar ao guia principal](../README.md)
 
 Servidor de streaming para receber vídeo de drones ou dispositivos compatíveis com publicação RTMP e disponibilizar a transmissão na rede local. O projeto executa o **MediaMTX em Docker**, com configuração em YAML.
 
@@ -56,7 +58,7 @@ Para personalizar a interface, edite `web/index.html`, `web/styles.css` e `web/a
     └── web/
 ```
 
-O instalador encontra `docker-install` em relação à sua própria localização, mesmo quando executado de outra pasta. Mantenha essa pasta junto ao instalador. O nome do projeto Compose continua baseado na pasta raiz, preservando a identificação dos containers existentes.
+O instalador encontra `docker-install` em relação à sua própria localização, mesmo quando executado de outra pasta. Mantenha essa pasta junto ao instalador. O nome do projeto Compose é baseado na pasta raiz. Se renomear essa pasta, use `COMPOSE_PROJECT_NAME` para manter a identificação anterior; veja a orientação de migração no [guia principal](../README.md#docker-linux).
 
 Para os comandos manuais de Docker e testes deste guia, entre na pasta de configuração e preserve o nome do projeto:
 
