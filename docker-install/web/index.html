@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Central de transmissão local para drones com RTMP.">
+  <title>Drone Streaming Server · Central de transmissão</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#transmissao"><span class="brand-icon">◈</span><span>DRONE STREAM<span class="brand-sub">LOCAL STREAMING SERVER</span></span></a>
+    <div class="nav-label">ESPAÇO DE TRABALHO</div>
+    <nav aria-label="Navegação principal">
+      <a href="#transmissao" class="active" data-view="transmissao"><span aria-hidden="true">◉</span> Transmissão</a>
+      <a href="#configuracoes" data-view="configuracoes"><span aria-hidden="true">⚙</span> Configurações</a>
+      <a href="#sobre" data-view="sobre"><span aria-hidden="true">ⓘ</span> Sobre o projeto</a>
+    </nav>
+    <div class="sidebar-footer"><span class="dot"></span> Ambiente local<p>Seu drone. Sua rede. Sua transmissão.</p></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><span>Workspace <span class="slash">/</span> <strong id="breadcrumb">Transmissão</strong></span><span class="local-badge">REDE LOCAL</span></header>
+    <main>
+      <section id="transmissao" class="view">
+        <div class="page-heading"><div><div class="eyebrow">CENTRAL DE TRANSMISSÃO</div><h1>Uma nova perspectiva.</h1><p>Acompanhe a câmera do seu drone, direto da sua rede.</p></div><span class="tag">RTMP → <span id="protocol-tag">WEBRTC</span></span></div>
+        <div class="stream-layout">
+          <div>
+            <article class="player-card">
+              <div class="card-toolbar"><span><span class="dot muted-dot"></span> Câmera do drone</span><span id="mode-label">WebRTC</span></div>
+              <div class="player-stage" id="player-stage">
+                <div class="player-placeholder" id="placeholder"><div class="target-icon">⌖</div><h2>Pronto para conectar</h2><p>Inicie a transmissão RTMP no drone.<br>Depois, abra o player para acompanhar o vídeo.</p><button class="primary" id="play">▶ Abrir player</button><span>O vídeo aparece quando o drone começar a transmitir.</span></div>
+                <iframe id="player" title="Player da câmera do drone" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen hidden></iframe>
+              </div>
+              <div class="player-footer"><span id="player-state" role="status">Player em espera</span><div><button class="text-button" id="reconnect">↻ Reconectar</button><button class="text-button" id="fullscreen">⛶ Tela cheia</button></div></div>
+            </article>
+            <div class="tip"><span>ⓘ</span><p><strong>Primeira transmissão?</strong> Configure o endereço RTMP no controle ou aplicativo do drone. Mantenha o dispositivo e este servidor na mesma rede.</p></div>
+          </div>
+          <aside class="connection-card"><div class="eyebrow">CONECTE SEU DRONE</div><h2>Do controle para a tela.</h2><p>Na opção de transmissão ao vivo do drone, selecione RTMP e cole este endereço completo.</p><label for="rtmp-url">ENDEREÇO RTMP</label><div class="url-field"><input id="rtmp-url" readonly aria-label="Endereço RTMP do drone"><button id="copy" title="Copiar endereço">Copiar</button></div><ol class="steps"><li><span>01</span><div><strong>Conecte à mesma rede</strong><p>O controle e o servidor precisam se comunicar.</p></div></li><li><span>02</span><div><strong>Cole o endereço no drone</strong><p>Use a URL completa, incluindo /drone.</p></div></li><li><span>03</span><div><strong>Inicie a transmissão</strong><p>Abra o player ao lado para assistir.</p></div></li></ol><div class="connection-detail"><span>Servidor</span><strong id="server-host"></strong></div><div class="connection-detail"><span>Canal</span><strong>/drone</strong></div></aside>
+        </div>
+        <div class="bottom-note"><span>TRANSMISSÃO LOCAL · SEM GRAVAÇÃO AUTOMÁTICA</span><a href="#configuracoes">Ajustar reprodução ↗</a></div>
+      </section>
+      <section id="configuracoes" class="view" hidden>
+        <div class="eyebrow">DO SEU JEITO</div><h1>Configurações</h1><p class="intro">Ajuste como este navegador se conecta à transmissão.</p>
+        <form id="settings-form" class="settings-card"><h2>Reprodução</h2><label for="server-ip">IPv4 do servidor</label><input id="server-ip" required inputmode="decimal" autocomplete="off" placeholder="192.168.15.2"><p class="field-help">O IP do computador que executa o servidor, acessível pela sua rede.</p><label for="protocol">Protocolo de vídeo</label><select id="protocol"><option value="webrtc">WebRTC · menor atraso</option><option value="hls">HLS · reprodução alternativa</option></select><label class="checkbox"><input id="autoplay" type="checkbox"> Abrir o player ao acessar o painel</label><div class="form-actions"><button class="primary" type="submit">Salvar preferências</button><button class="secondary" type="button" id="reset">Restaurar padrão</button></div><p class="field-help">Preferências salvas apenas neste navegador. Alterar o IP aqui não altera o endereço anunciado pelo servidor. Para mudar a rede do servidor, reinicie pelo install-DroneStreamingServer.sh com o IP correto.</p></form>
+      </section>
+      <section id="sobre" class="view" hidden>
+        <div class="eyebrow">FEITO PARA CONECTAR</div><h1>Sobre o projeto</h1><p class="intro">Uma ponte entre a câmera do drone e quem precisa acompanhar.</p><div class="about-grid"><article class="settings-card"><span class="large-mark">◈</span><h2>Drone Streaming Server</h2><p>Servidor de vídeo para receber uma publicação RTMP de um dispositivo compatível com RTMP e distribuí-la na rede local por WebRTC e HLS.</p><div class="tech-tags"><span>Docker</span><span>MediaMTX</span><span>WebRTC</span><span>HLS</span></div><p>Projeto independente, sem afiliação com a DJI. A compatibilidade depende do drone, do controle e da versão do aplicativo.</p></article><article class="settings-card"><div class="eyebrow">QUEM ESTÁ POR TRÁS</div><h2 id="creator-name">Criador do projeto</h2><p id="creator-description">Informações do criador indisponíveis no momento.</p><a id="creator-link" target="_blank" rel="noopener noreferrer" hidden>GitHub do criador ↗</a><p><a id="creator-email" hidden></a></p><div class="donation"><div class="eyebrow">APOIE O PROJETO</div><h2>Ajude esta ideia a voar.</h2><p>Se este projeto foi útil para você e deseja contribuir, considere fazer uma doação via Pix. Seu apoio ajuda na continuidade e nas melhorias do projeto.</p><label for="pix-key">CHAVE PIX</label><input id="pix-key" value="Em breve · chave Pix será adicionada" readonly><p class="field-help">Toda contribuição é bem-vinda. Obrigado por apoiar!</p></div></article></div>
+      </section>
+    </main>
+    <footer>Drone Streaming Server <span>Uma visão mais próxima, onde você estiver na rede.</span></footer>
+  </div>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>

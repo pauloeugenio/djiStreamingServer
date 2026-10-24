@@ -1,0 +1,26 @@
+services:
+  painel:
+    image: nginx:stable-alpine
+    restart: "no"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+    depends_on:
+      - mediamtx
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: drone-mediamtx
+    restart: "no"
+    environment:
+      MTX_WEBRTCADDITIONALHOSTS: "${DRONE_SERVER_IP:-${DJI_SERVER_IP:-192.168.15.2}}"
+
+    ports:
+      - "1935:1935"
+      - "8888:8888"
+      - "8889:8889"
+      - "8189:8189/udp"
+
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
