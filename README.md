@@ -210,31 +210,31 @@ Detalhes do código, empacotamento e dependências: [guia Windows](windows-insta
 
 ## Configurar o drone: passo a passo no DJI
 
-As capturas abaixo foram fornecidas pelo criador e mostram uma configuração real no controle/aplicativo DJI. Os nomes dos menus e os recursos disponíveis variam com o equipamento, o firmware e a versão do aplicativo. O requisito é oferecer **RTMP personalizado**; o projeto não depende de um único modelo de drone.
+As imagens abaixo foram preparadas a partir das capturas fornecidas pelo criador: o fundo da câmera foi removido e os locais de acesso foram destacados em vermelho. Elas ilustram a configuração no controle/aplicativo DJI. Os nomes dos menus e os recursos disponíveis variam com o equipamento, o firmware e a versão do aplicativo. O requisito é oferecer **RTMP personalizado**; o projeto não depende de um único modelo de drone.
 
 Antes de configurar, inicie o servidor na versão escolhida e copie a URL RTMP exibida. O endereço `192.168.15.2` das imagens é apenas o exemplo da demonstração.
 
 ### 1. Abrir as configurações da câmera
 
-Na visualização da câmera, toque no menu de **três pontos**, no canto superior direito.
+Na visualização da câmera, toque no menu de **três pontos**, no canto superior direito. O detalhe ampliado abaixo destaca esse botão em vermelho.
 
-![Visualização da câmera DJI com acesso ao menu de três pontos](docs/images/dji-01-camera.jpeg)
+<img src="docs/images/dji-01-menu-anotado.png" alt="Detalhe do botão de três pontos, destacado por um círculo vermelho" width="520">
 
 ### 2. Acessar as plataformas de transmissão ao vivo
 
-Abra a aba **Transmissão** e selecione **Plataformas de transmissão ao vivo**.
+Primeiro, toque na aba **Transmissão**, circulada no topo. Depois, selecione a linha **Plataformas de transmissão ao vivo**, também destacada em vermelho.
 
-![Aba Transmissão e opção Plataformas de transmissão ao vivo](docs/images/dji-02-transmissao.jpeg)
+![Aba Transmissão e opção Plataformas de transmissão ao vivo](docs/images/dji-02-transmissao-anotado.png)
 
 ### 3. Selecionar RTMP
 
-Na lista de plataformas, escolha **RTMP**.
+Na lista de plataformas, toque na opção **RTMP**, destacada pelo círculo vermelho.
 
-![Seleção da plataforma RTMP no controle DJI](docs/images/dji-03-rtmp.jpeg)
+![Seleção da plataforma RTMP no controle DJI](docs/images/dji-03-rtmp-anotado.png)
 
 ### 4. Informar o endereço do servidor
 
-Em **Endereço RTMP**, cole a URL completa exibida pelo software, por exemplo:
+No campo **Endereço RTMP**, destacado pelo círculo superior, cole a URL completa exibida pelo software, por exemplo:
 
 ```text
 rtmp://192.168.15.2:1935/drone
@@ -242,9 +242,9 @@ rtmp://192.168.15.2:1935/drone
 
 Na configuração mostrada, a URL já contém o caminho `/drone` e o campo **Chave de transmissão** fica vazio. O projeto não configura uma chave adicional. Não acrescente `/live` nem repita `/drone` no campo de chave.
 
-Escolha a resolução e a taxa de bits conforme as opções do equipamento e a capacidade da rede; então toque em **Iniciar transmissão ao vivo**. A captura mostra `1080p` e `Alta qualidade` selecionados, como exemplo, não como requisitos do servidor.
+Escolha a resolução e a taxa de bits conforme as opções do equipamento e a capacidade da rede; então toque em **Iniciar transmissão ao vivo**, destacado pelo círculo inferior. A captura mostra `1080p` e `Alta qualidade` selecionados, como exemplo, não como requisitos do servidor.
 
-![Configuração da URL RTMP, resolução, taxa de bits e início da transmissão](docs/images/dji-04-configuracao-rtmp.jpeg)
+![Configuração da URL RTMP, resolução, taxa de bits e início da transmissão](docs/images/dji-04-configuracao-rtmp-anotado.png)
 
 ### 5. Confirmar a chegada do vídeo
 
